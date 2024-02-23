@@ -1,19 +1,19 @@
 ## Github workflow to create multiarch binaries from source
 
-name: Create Binaries
+name: Matrix Test
 
 on:
   workflow_dispatch:
 
 ## change the display name to the tag being built
-run-name: ${{ inputs.tag }}
+run-name: Matrix Test
 
 jobs:
   ## Runs when the following is true:
   ##  - tag is provided
   ##  - workflow is building default branch (master)
   artifact:
-    name: Build Binaries
+    name: Matrix Test
     runs-on: ubuntu-latest
     strategy:
       ## Run a maximum of 10 builds concurrently, using the matrix defined in inputs.arch
@@ -40,11 +40,6 @@ jobs:
           - arch: macos # excludes macos-armv7
             cpu: armv7
     steps:
-      ## Setup Docker for the builds
-      - name: Docker setup
-        run: |
-          echo "Docker Setup"
-
       ## Build the binaries using defined dockerfiles
       - name: Build Binary (${{ matrix.platform }}_${{ matrix.cpu }})
         id: build_binaries
