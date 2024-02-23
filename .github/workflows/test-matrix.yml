@@ -1,0 +1,61 @@
+## Github workflow to create multiarch binaries from source
+
+name: Create Binaries
+
+on:
+  workflow_dispatch:
+
+## change the display name to the tag being built
+run-name: ${{ inputs.tag }}
+
+jobs:
+  ## Runs when the following is true:
+  ##  - tag is provided
+  ##  - workflow is building default branch (master)
+  artifact:
+    name: Build Binaries
+    runs-on: ubuntu-latest
+    strategy:
+      ## Run a maximum of 10 builds concurrently, using the matrix defined in inputs.arch
+      max-parallel: 10
+      matrix:
+        platform:
+          - linux-musl
+          - linux-glibc
+          - macos 
+          - windows
+        # stdlib:
+        #   - glibc
+        #   - musl
+        cpu:
+          - arm64
+          - armv7
+          - x86-64
+          - x86-64-v3
+        exclude:
+          - arch: windows # excludes windows-arm64
+            cpu: arm64
+          - arch: windows # excludes windows-armv7
+            cpu: armv7
+          - arch: macos # excludes macos-armv7
+            cpu: armv7
+    steps:
+      ## Setup Docker for the builds
+      - name: Docker setup
+        run: |
+          echo "Docker Setup"
+
+      ## Build the binaries using defined dockerfiles
+      - name: Build Binary (${{ matrix.platform }}_${{ matrix.cpu }})
+        id: build_binaries
+        run: |
+          echo "build binaries"
+          echo "Buildfile: Dockerfile.${{ matrix.platform }}-${{ matrix.cpu }}"
+          echo "build args:"
+          echo "
+            STACKS_NODE_VERSION=${{ inputs.tag || env.GITHUB_SHA_SHORT }}
+            OS_ARCH=${{ matrix.platform }}
+            TARGET_CPU=${{ matrix.cpu }}
+            GIT_BRANCH=${{ env.GITHUB_REF_SHORT }}
+            GIT_COMMIT=${{ env.GITHUB_SHA_SHORT }}
+          "
