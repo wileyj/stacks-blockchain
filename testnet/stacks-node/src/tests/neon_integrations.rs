@@ -11206,10 +11206,16 @@ fn bitcoin_reorg_flap() {
     let mut btcd_controller = BitcoinCoreController::new(conf.clone());
     btcd_controller
         .start_bitcoind()
+	.map_err(|_e| ())
         .expect("Failed starting bitcoind");
 
-    let mut btc_regtest_controller = BitcoinRegtestController::new(conf.clone(), None);
-
+    let burnchain_config = Burnchain::regtest(&conf.get_burn_db_path());
+    let mut btc_regtest_controller = BitcoinRegtestController::with_burnchain(
+        conf.clone(),
+        None,
+        Some(burnchain_config.clone()),
+        None,
+    );
     btc_regtest_controller.bootstrap_chain(201);
 
     eprintln!("Chain bootstrapped...");
