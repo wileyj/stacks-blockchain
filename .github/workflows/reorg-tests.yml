@@ -47,6 +47,18 @@ jobs:
         with:
           test-name: ${{ matrix.test-name }}
 
+      - name: Check bitcoind logs
+        if: always()
+        id: check_logs
+        shell: bash
+        run: |
+          if [ -f "/tmp/bitcoind.log" ]; then
+            echo "Found file: /tmp/bitcoind.log"
+            cat /tmp/bitcoind.log
+          fi
+          echo "Missing logfile /tmp/bitcoind.log"
+          ls -altr /tmp
+
       ## Create and upload code coverage file
       - name: Code Coverage
         id: codecov
