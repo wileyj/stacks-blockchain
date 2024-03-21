@@ -21,6 +21,7 @@ on:
           - Atlas Tests
           - Bitcoin Tests
           - Epoch Tests
+          - Reorg Tests
           - Slow Tests
           - Stacks-Core Tests
 
@@ -83,6 +84,22 @@ jobs:
     needs:
       - create-cache
     uses: ./.github/workflows/atlas-tests.yml
+
+  #####################################################
+  ## Runs when:
+  ##   either or of the following:
+  ##     - workflow is 'Reorg Tests'
+  reorg-tests:
+    if: |
+      (
+        inputs.workflow == 'Release Tests' ||
+        inputs.workflow == 'Reorg Tests' 
+      )
+    name: Reorg Tests
+    needs:
+      - create-cache
+    uses: ./.github/workflows/reorg-tests.yml
+
 
   ## Runs when:
   ##   either or of the following:
