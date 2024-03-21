@@ -43,7 +43,7 @@ jobs:
       - name: Run Tests
         id: run_tests
         timeout-minutes: ${{ fromJSON(env.TEST_TIMEOUT) }}
-        uses: wileyj/actions/stacks-core/run-tests@main
+        uses: wileyj/actions/stacks-core/run-tests/reorg@main
         with:
           test-name: ${{ matrix.test-name }}
 
