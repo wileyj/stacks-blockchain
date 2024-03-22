@@ -11207,31 +11207,29 @@ fn bitcoin_reorg_flap() {
     btcd_controller
         .start_bitcoind()
         .map_err(|_e| ())
-        .expect("Failed starting bitcoind 1");
+        .expect("Failed starting bitcoind");
 
     let mut btc_regtest_controller = BitcoinRegtestController::new(conf.clone(), None);
     let http_origin = format!("http://{}", &conf.node.rpc_bind);
-    info!("\n\nbootstrap chain 1\n\n");
+
     btc_regtest_controller.bootstrap_chain(201);
 
     eprintln!("Chain bootstrapped...");
 
     let mut run_loop = neon::RunLoop::new(conf);
     let blocks_processed = run_loop.get_blocks_processed_arc();
+
     let channel = run_loop.get_coordinator_channel().unwrap();
-    info!("\n\nspawn thread bitcoin 1\n\n");
+
     thread::spawn(move || run_loop.start(None, 0));
 
     // give the run loop some time to start up!
-    info!("\n\nwait for runloop 1\n\n");
     wait_for_runloop(&blocks_processed);
 
     // first block wakes up the run loop
-    info!("\n\nwake runloop 1\n\n");
     next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
 
     // first block will hold our VRF registration
-    info!("\n\nHold vrf registration 1\n\n");
     next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
 
     let mut sort_height = channel.get_sortitions_processed();
@@ -11242,11 +11240,62 @@ fn bitcoin_reorg_flap() {
         sort_height = channel.get_sortitions_processed();
         eprintln!("Sort height: {}", sort_height);
     }
+    // let's query the miner's account nonce:
 
-    eprintln!("Miner account 1: {}", miner_account);
-    info!("\n\nStopping bitcoin 1\n\n");
-    btcd_controller.stop_bitcoind().unwrap();
-    info!("\n\nclosing channel 1\n\n");
+    eprintln!("Miner account: {}", miner_account);
+
+    let account = get_account(&http_origin, &miner_account);
+
+    // N.B. rewards mature after 2 confirmations...
+    assert_eq!(account.balance, 4 * (1_000_000_000 + 20_400_000));
+    assert_eq!(account.nonce, 7);
+
+    // okay, let's figure out the burn block we want to fork away.
+    let burn_header_hash_to_fork = btc_regtest_controller.get_block_hash(206);
+    btc_regtest_controller.invalidate_block(&burn_header_hash_to_fork);
+    btc_regtest_controller.build_next_block(5);
+
+    thread::sleep(Duration::from_secs(50));
+    eprintln!("Wait for block off of shallow fork");
+    next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
+
+    let account = get_account(&http_origin, &miner_account);
+
+    // N.B. rewards mature after 2 confirmations...
+    assert_eq!(account.balance, 0);
+    assert_eq!(account.nonce, 2);
+
+    next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
+
+    let account = get_account(&http_origin, &miner_account);
+
+    // N.B. rewards mature after 2 confirmations...
+    assert_eq!(account.balance, 0);
+    // but we're able to keep on mining
+    assert_eq!(account.nonce, 3);
+
+    // Let's create another fork, deeper
+    let burn_header_hash_to_fork = btc_regtest_controller.get_block_hash(206);
+    eprintln!("Instigate 10-block deep fork");
+    btc_regtest_controller.invalidate_block(&burn_header_hash_to_fork);
+    btc_regtest_controller.build_next_block(10);
+
+    thread::sleep(Duration::from_secs(50));
+    eprintln!("Wait for block off of deep fork");
+    next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
+
+    let account = get_account(&http_origin, &miner_account);
+    assert_eq!(account.balance, 0);
+    assert_eq!(account.nonce, 3);
+
+    next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
+
+    let account = get_account(&http_origin, &miner_account);
+
+    // but we're able to keep on mining
+    assert!(account.nonce >= 3);
+
+    eprintln!("End of test");
     channel.stop_chains_coordinator();
 
     // if env::var("BITCOIND_TEST") != Ok("1".into()) {
