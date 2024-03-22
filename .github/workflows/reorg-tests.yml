@@ -30,6 +30,7 @@ jobs:
       matrix:
         test-name:
           - tests::neon_integrations::bitcoin_reorg_flap
+          - tests::neon_integrations::bitcoind_forking_test
     steps:
       ## Setup test environment
       - name: Setup Test Environment
