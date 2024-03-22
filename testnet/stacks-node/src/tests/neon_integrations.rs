@@ -11201,7 +11201,7 @@ fn bitcoin_reorg_flap() {
         return;
     }
 
-    let (conf, _miner_account) = neon_integration_test_conf();
+    let (conf, miner_account) = neon_integration_test_conf();
     // https://github.com/stacks-network/stacks-core/blob/next/testnet/stacks-node/src/tests/neon_integrations.rs#L5448C4-L5448C27
 
     let mut btcd_controller = BitcoinCoreController::new(conf.clone());
