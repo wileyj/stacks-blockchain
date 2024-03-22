@@ -11222,16 +11222,16 @@ fn bitcoin_reorg_flap() {
     btc_regtest_controller.bootstrap_chain(201);
     
     eprintln!("Chain bootstrapped...");
-    let res = get_account(&http_origin, &miner_account);
-    assert_eq!(res.balance, 0);
-    assert_eq!(res.nonce, 1);
 
     let mut run_loop = neon::RunLoop::new(conf.clone());
     let blocks_processed = run_loop.get_blocks_processed_arc();
-
     let channel = run_loop.get_coordinator_channel().unwrap();
 
-    thread::spawn(move || run_loop.start(None, 0));
+    thread::spawn(move || run_loop.start(Some(burnchain_config), 0));
+
+    let res = get_account(&http_origin, &miner_account);
+    assert_eq!(res.balance, 0);
+    assert_eq!(res.nonce, 1);
     /* start comment
 
     // give the run loop some time to start up!
