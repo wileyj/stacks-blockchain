@@ -26,11 +26,12 @@ jobs:
       ## Continue with the test matrix even if we've had a failure
       fail-fast: false
       ## Run a maximum of 2 concurrent tests from the test matrix
-      max-parallel: 2
+      max-parallel: 3
       matrix:
         test-name:
-          - tests::neon_integrations::bitcoin_reorg_flap
+          - tests::neon_integrations::cost_voting_integration
           - tests::neon_integrations::bitcoind_forking_test
+          - tests::neon_integrations::bitcoin_reorg_flap
     steps:
       ## Setup test environment
       - name: Setup Test Environment

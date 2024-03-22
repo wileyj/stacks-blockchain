@@ -11202,6 +11202,7 @@ fn bitcoin_reorg_flap() {
     }
 
     let (conf, _miner_account) = neon_integration_test_conf();
+    // https://github.com/stacks-network/stacks-core/blob/next/testnet/stacks-node/src/tests/neon_integrations.rs#L5448C4-L5448C27
 
     let mut btcd_controller = BitcoinCoreController::new(conf.clone());
     info!("\n\nStarting bitcoin 1\n\n");
@@ -11217,16 +11218,21 @@ fn bitcoin_reorg_flap() {
         Some(burnchain_config.clone()),
         None,
     );
+    let http_origin = format!("http://{}", &conf.node.rpc_bind);
     btc_regtest_controller.bootstrap_chain(201);
-
+    
     eprintln!("Chain bootstrapped...");
-/* start comment
+    let res = get_account(&http_origin, &miner_account);
+    assert_eq!(res.balance, 0);
+    assert_eq!(res.nonce, 1);
+
     let mut run_loop = neon::RunLoop::new(conf.clone());
     let blocks_processed = run_loop.get_blocks_processed_arc();
 
     let channel = run_loop.get_coordinator_channel().unwrap();
 
     thread::spawn(move || run_loop.start(None, 0));
+    /* start comment
 
     // give the run loop some time to start up!
     wait_for_runloop(&blocks_processed);
