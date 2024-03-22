@@ -11201,37 +11201,85 @@ fn bitcoin_reorg_flap() {
         return;
     }
 
-    let (conf, _miner_account) = neon_integration_test_conf();
-    // https://github.com/stacks-network/stacks-core/blob/next/testnet/stacks-node/src/tests/neon_integrations.rs#L5448C4-L5448C27
+    let (conf, miner_account) = neon_integration_test_conf();
 
     let mut btcd_controller = BitcoinCoreController::new(conf.clone());
-    info!("\n\nStarting bitcoin 1\n\n");
     btcd_controller
         .start_bitcoind()
-	    .map_err(|_e| ())
+        .map_err(|_e| ())
         .expect("Failed starting bitcoind 1");
 
-    let burnchain_config = Burnchain::regtest(&conf.get_burn_db_path());
-    let mut btc_regtest_controller = BitcoinRegtestController::with_burnchain(
-        conf.clone(),
-        None,
-        Some(burnchain_config.clone()),
-        None,
-    );
-    // let http_origin = format!("http://{}", &conf.node.rpc_bind);
+    let mut btc_regtest_controller = BitcoinRegtestController::new(conf.clone(), None);
+    let http_origin = format!("http://{}", &conf.node.rpc_bind);
+    info!("\n\nbootstrap chain 1\n\n");
     btc_regtest_controller.bootstrap_chain(201);
-    
+
     eprintln!("Chain bootstrapped...");
 
-    let mut run_loop = neon::RunLoop::new(conf.clone());
+    let mut run_loop = neon::RunLoop::new(conf);
     let blocks_processed = run_loop.get_blocks_processed_arc();
     let channel = run_loop.get_coordinator_channel().unwrap();
+    info!("\n\nspawn thread bitcoin 1\n\n");
+    thread::spawn(move || run_loop.start(None, 0));
 
-    thread::spawn(move || run_loop.start(Some(burnchain_config), 0));
+    // give the run loop some time to start up!
+    info!("\n\nwait for runloop 1\n\n");
+    wait_for_runloop(&blocks_processed);
 
-    // let res = get_account(&http_origin, &miner_account);
-    // assert_eq!(res.balance, 0);
-    // assert_eq!(res.nonce, 1);
+    // first block wakes up the run loop
+    info!("\n\nwake runloop 1\n\n");
+    next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
+
+    // first block will hold our VRF registration
+    info!("\n\nHold vrf registration 1\n\n");
+    next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
+
+    let mut sort_height = channel.get_sortitions_processed();
+    eprintln!("Sort height: {}", sort_height);
+
+    while sort_height < 210 {
+        next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
+        sort_height = channel.get_sortitions_processed();
+        eprintln!("Sort height: {}", sort_height);
+    }
+
+    eprintln!("Miner account 1: {}", miner_account);
+    info!("\n\nStopping bitcoin 1\n\n");
+    btcd_controller.stop_bitcoind().unwrap();
+    info!("\n\nclosing channel 1\n\n");
+    channel.stop_chains_coordinator();
+
+    // if env::var("BITCOIND_TEST") != Ok("1".into()) {
+    //     return;
+    // }
+
+    // let (conf, _miner_account) = neon_integration_test_conf();
+    // // https://github.com/stacks-network/stacks-core/blob/next/testnet/stacks-node/src/tests/neon_integrations.rs#L5448C4-L5448C27
+
+    // let mut btcd_controller = BitcoinCoreController::new(conf.clone());
+    // info!("\n\nStarting bitcoin 1\n\n");
+    // btcd_controller
+    //     .start_bitcoind()
+	//     .map_err(|_e| ())
+    //     .expect("Failed starting bitcoind 1");
+
+    // let burnchain_config = Burnchain::regtest(&conf.get_burn_db_path());
+    // let mut btc_regtest_controller = BitcoinRegtestController::with_burnchain(
+    //     conf.clone(),
+    //     None,
+    //     Some(burnchain_config.clone()),
+    //     None,
+    // );
+    // btc_regtest_controller.bootstrap_chain(201);
+    
+    // eprintln!("Chain bootstrapped...");
+
+    // let mut run_loop = neon::RunLoop::new(conf.clone());
+    // let blocks_processed = run_loop.get_blocks_processed_arc();
+    // let channel = run_loop.get_coordinator_channel().unwrap();
+
+    // thread::spawn(move || run_loop.start(Some(burnchain_config), 0));
+
     /* start comment
 
     // give the run loop some time to start up!
@@ -11323,7 +11371,7 @@ fn bitcoin_reorg_flap() {
     }
     assert_eq!(channel.get_sortitions_processed(), 225);
     end comment*/
-    info!("\n\nStopping bitcoin 4\n\n");
-    btcd_controller.stop_bitcoind().unwrap();
-    channel.stop_chains_coordinator();
+    // info!("\n\nStopping bitcoin 4\n\n");
+    // btcd_controller.stop_bitcoind().unwrap();
+    // channel.stop_chains_coordinator();
 }
