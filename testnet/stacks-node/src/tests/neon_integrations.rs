@@ -11208,7 +11208,7 @@ fn bitcoin_reorg_flap() {
     btcd_controller
         .start_bitcoind()
 	    .map_err(|_e| ())
-        .expect("Failed starting bitcoind");
+        .expect("Failed starting bitcoind 1");
 
     let burnchain_config = Burnchain::regtest(&conf.get_burn_db_path());
     let mut btc_regtest_controller = BitcoinRegtestController::with_burnchain(
@@ -11264,7 +11264,7 @@ fn bitcoin_reorg_flap() {
     btcd_controller
         .start_bitcoind()
 	    .map_err(|_e| ())
-        .expect("Failed starting bitcoind");
+        .expect("Failed starting bitcoind 2");
 
     let btc_regtest_controller = BitcoinRegtestController::new(conf.clone(), None);
     thread::sleep(Duration::from_secs(5));
@@ -11288,7 +11288,7 @@ fn bitcoin_reorg_flap() {
     btcd_controller
         .start_bitcoind()
 	    .map_err(|_e| ())
-        .expect("Failed starting bitcoind");
+        .expect("Failed starting bitcoind 3");
 
     for _i in 0..5 {
         btc_regtest_controller.build_next_block(1);
@@ -11306,7 +11306,7 @@ fn bitcoin_reorg_flap() {
     btcd_controller
         .start_bitcoind()
         .map_err(|_e| ())
-        .expect("Failed starting bitcoind");
+        .expect("Failed starting bitcoind 4");
 
     // carry out the flap back to fork A
     for _i in 0..7 {
