@@ -11204,9 +11204,10 @@ fn bitcoin_reorg_flap() {
     let (conf, _miner_account) = neon_integration_test_conf();
 
     let mut btcd_controller = BitcoinCoreController::new(conf.clone());
+    info!("\n\nStarting bitcoin 1\n\n");
     btcd_controller
         .start_bitcoind()
-	.map_err(|_e| ())
+	    .map_err(|_e| ())
         .expect("Failed starting bitcoind");
 
     let burnchain_config = Burnchain::regtest(&conf.get_burn_db_path());
@@ -11246,6 +11247,7 @@ fn bitcoin_reorg_flap() {
     }
 
     // stop bitcoind and copy its DB to simulate a chain flap
+    info!("\n\nStopping bitcoin 1\n\n");
     btcd_controller.stop_bitcoind().unwrap();
     thread::sleep(Duration::from_secs(5));
 
@@ -11258,8 +11260,10 @@ fn bitcoin_reorg_flap() {
 
     // resume
     let mut btcd_controller = BitcoinCoreController::new(conf.clone());
+    info!("\n\nStarting bitcoin 2\n\n");
     btcd_controller
         .start_bitcoind()
+	    .map_err(|_e| ())
         .expect("Failed starting bitcoind");
 
     let btc_regtest_controller = BitcoinRegtestController::new(conf.clone(), None);
@@ -11272,7 +11276,7 @@ fn bitcoin_reorg_flap() {
         btc_regtest_controller.build_next_block(1);
         thread::sleep(Duration::from_secs(5));
     }
-
+    info!("\n\nStopping bitcoin 2\n\n");
     btcd_controller.stop_bitcoind().unwrap();
 
     info!("\n\nBegin reorg flap from A to B\n\n");
@@ -11280,9 +11284,10 @@ fn bitcoin_reorg_flap() {
     // carry out the flap to fork B -- new_conf's state was the same as before the reorg
     let mut btcd_controller = BitcoinCoreController::new(new_conf.clone());
     let btc_regtest_controller = BitcoinRegtestController::new(new_conf.clone(), None);
-
+    info!("\n\nStarting bitcoin 3\n\n");
     btcd_controller
         .start_bitcoind()
+	    .map_err(|_e| ())
         .expect("Failed starting bitcoind");
 
     for _i in 0..5 {
@@ -11290,14 +11295,17 @@ fn bitcoin_reorg_flap() {
         thread::sleep(Duration::from_secs(5));
     }
 
+    info!("\n\nStopping bitcoin 3\n\n");
     btcd_controller.stop_bitcoind().unwrap();
 
     info!("\n\nBegin reorg flap from B to A\n\n");
 
     let mut btcd_controller = BitcoinCoreController::new(conf.clone());
     let btc_regtest_controller = BitcoinRegtestController::new(conf.clone(), None);
+    info!("\n\nStarting bitcoin 4\n\n");
     btcd_controller
         .start_bitcoind()
+        .map_err(|_e| ())
         .expect("Failed starting bitcoind");
 
     // carry out the flap back to fork A
@@ -11307,6 +11315,7 @@ fn bitcoin_reorg_flap() {
     }
 
     assert_eq!(channel.get_sortitions_processed(), 225);
+    info!("\n\nStopping bitcoin 4\n\n");
     btcd_controller.stop_bitcoind().unwrap();
     channel.stop_chains_coordinator();
 }
