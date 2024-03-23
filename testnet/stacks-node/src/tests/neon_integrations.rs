@@ -11244,8 +11244,12 @@ fn bitcoin_reorg_flap() {
 
     // stop bitcoind and copy its DB to simulate a chain flap
     info!("\n\nStopping bitcoin 1\n\n");
-    btcd_controller.stop_bitcoind().unwrap();
-    thread::sleep(Duration::from_secs(5));
+    //btcd_controller.stop_bitcoind().unwrap();
+    btcd_controller
+        .stop_bitcoind()
+        .map_err(|_e| ())
+        .expect("Failed stoppping bitcoind");
+    thread::sleep(Duration::from_secs(60));
 
     eprintln!("End of test");
     channel.stop_chains_coordinator();
