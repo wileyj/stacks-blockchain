@@ -11241,9 +11241,57 @@ fn bitcoin_reorg_flap() {
     // let's query the miner's account nonce:
 
     eprintln!("Miner account: {}", miner_account);
+    let account = get_account(&http_origin, &miner_account);
 
-    // stop bitcoind and copy its DB to simulate a chain flap
-    info!("\n\nStopping bitcoin 1\n\n");
+    // N.B. rewards mature after 2 confirmations...
+    assert_eq!(account.balance, 4 * (1_000_000_000 + 20_400_000));
+    assert_eq!(account.nonce, 7);
+
+    // okay, let's figure out the burn block we want to fork away.
+    let burn_header_hash_to_fork = btc_regtest_controller.get_block_hash(206);
+    btc_regtest_controller.invalidate_block(&burn_header_hash_to_fork);
+    btc_regtest_controller.build_next_block(5);
+
+    thread::sleep(Duration::from_secs(50));
+    eprintln!("Wait for block off of shallow fork");
+    next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
+
+    let account = get_account(&http_origin, &miner_account);
+
+    // N.B. rewards mature after 2 confirmations...
+    assert_eq!(account.balance, 0);
+    assert_eq!(account.nonce, 2);
+
+    next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
+
+    let account = get_account(&http_origin, &miner_account);
+
+    // N.B. rewards mature after 2 confirmations...
+    assert_eq!(account.balance, 0);
+    // but we're able to keep on mining
+    assert_eq!(account.nonce, 3);
+
+    // Let's create another fork, deeper
+    let burn_header_hash_to_fork = btc_regtest_controller.get_block_hash(206);
+    eprintln!("Instigate 10-block deep fork");
+    btc_regtest_controller.invalidate_block(&burn_header_hash_to_fork);
+    btc_regtest_controller.build_next_block(10);
+
+    thread::sleep(Duration::from_secs(50));
+    eprintln!("Wait for block off of deep fork");
+    next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
+
+    let account = get_account(&http_origin, &miner_account);
+    assert_eq!(account.balance, 0);
+    assert_eq!(account.nonce, 3);
+
+    next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
+
+    let account = get_account(&http_origin, &miner_account);
+
+    // but we're able to keep on mining
+    assert!(account.nonce >= 3);
+
     //btcd_controller.stop_bitcoind().unwrap();
     btcd_controller
         .stop_bitcoind()
@@ -11254,6 +11302,9 @@ fn bitcoin_reorg_flap() {
 
     eprintln!("End of test");
     channel.stop_chains_coordinator();
+
+    // stop bitcoind and copy its DB to simulate a chain flap
+    info!("\n\nStopping bitcoin 1\n\n");
 
     //
     // copied from bitcoind_forking_test
