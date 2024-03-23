@@ -11249,7 +11249,8 @@ fn bitcoin_reorg_flap() {
         .stop_bitcoind()
         .map_err(|_e| ())
         .expect("Failed stoppping bitcoind");
-    thread::sleep(Duration::from_secs(60));
+    info!("\n\nthread sleep for 120s\n\n");
+    thread::sleep(Duration::from_secs(120));
 
     eprintln!("End of test");
     channel.stop_chains_coordinator();
