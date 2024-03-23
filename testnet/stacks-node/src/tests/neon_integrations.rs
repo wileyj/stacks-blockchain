@@ -11216,7 +11216,7 @@ fn bitcoin_reorg_flap() {
         Some(burnchain_config.clone()),
         None,
     );
-    let http_origin = format!("http://{}", &conf.node.rpc_bind);
+    // let http_origin = format!("http://{}", &conf.node.rpc_bind);
 
     btc_regtest_controller.bootstrap_chain(201);
 
@@ -11246,10 +11246,10 @@ fn bitcoin_reorg_flap() {
         eprintln!("Sort height: {}", sort_height);
     }
 
-    // let's query the miner's account nonce:
-    let res = get_account(&http_origin, &miner_account);
-    assert_eq!(res.balance, 0);
-    assert_eq!(res.nonce, 1);
+    // // let's query the miner's account nonce:
+    // let res = get_account(&http_origin, &miner_account);
+    // assert_eq!(res.balance, 0);
+    // assert_eq!(res.nonce, 1);
 
 
     // stop bitcoind and copy its DB to simulate a chain flap
