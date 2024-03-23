@@ -11242,10 +11242,10 @@ fn bitcoin_reorg_flap() {
 
     eprintln!("Miner account: {}", miner_account);
 
-    // // stop bitcoind and copy its DB to simulate a chain flap
-    // info!("\n\nStopping bitcoin 1\n\n");
-    // btcd_controller.stop_bitcoind().unwrap();
-    // thread::sleep(Duration::from_secs(5));
+    // stop bitcoind and copy its DB to simulate a chain flap
+    info!("\n\nStopping bitcoin 1\n\n");
+    btcd_controller.stop_bitcoind().unwrap();
+    thread::sleep(Duration::from_secs(5));
 
     eprintln!("End of test");
     channel.stop_chains_coordinator();

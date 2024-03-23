@@ -101,7 +101,7 @@ impl BitcoinCoreController {
 
     pub fn stop_bitcoind(&mut self) -> Result<(), BitcoinCoreError> {
         if let Some(_) = self.bitcoind_process.take() {
-            let mut command = Command::new("bitcoin-cli");
+            let mut command = Command::new("sudo bitcoin-cli");
             command
                 .stdout(Stdio::piped())
                 .arg("-rpcconnect=127.0.0.1")
@@ -109,7 +109,7 @@ impl BitcoinCoreController {
                 .arg("-rpcuser=neon-tester")
                 .arg("-rpcpassword=neon-tester-pass")
                 .arg("stop");
-
+            
             let mut process = match command.spawn() {
                 Ok(child) => child,
                 Err(e) => return Err(BitcoinCoreError::SpawnFailed(format!("{:?}", e))),
