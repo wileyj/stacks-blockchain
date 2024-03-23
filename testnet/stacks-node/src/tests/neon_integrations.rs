@@ -11200,31 +11200,27 @@ fn bitcoin_reorg_flap() {
     if env::var("BITCOIND_TEST") != Ok("1".into()) {
         return;
     }
-
     let (conf, miner_account) = neon_integration_test_conf();
     let mut btcd_controller = BitcoinCoreController::new(conf.clone());
     btcd_controller
         .start_bitcoind()
         .map_err(|_e| ())
-        .expect("Failed starting bitcoind 1");
+        .expect("Failed starting bitcoind");
 
-    let burnchain_config = Burnchain::regtest(&conf.get_burn_db_path());
-
-    let mut btc_regtest_controller = BitcoinRegtestController::with_burnchain(
-        conf.clone(),
-        None,
-        Some(burnchain_config.clone()),
-        None,
-    );
-    // let http_origin = format!("http://{}", &conf.node.rpc_bind);
+    let mut btc_regtest_controller = BitcoinRegtestController::new(conf.clone(), None);
+    let http_origin = format!("http://{}", &conf.node.rpc_bind);
 
     btc_regtest_controller.bootstrap_chain(201);
 
     eprintln!("Chain bootstrapped...");
-    let mut run_loop = neon::RunLoop::new(conf.clone());
+
+    let mut run_loop = neon::RunLoop::new(conf);
     let blocks_processed = run_loop.get_blocks_processed_arc();
+
     let channel = run_loop.get_coordinator_channel().unwrap();
-    thread::spawn(move || run_loop.start(Some(burnchain_config), 0));
+
+    thread::spawn(move || run_loop.start(None, 0));
+
     // give the run loop some time to start up!
     wait_for_runloop(&blocks_processed);
 
@@ -11232,9 +11228,6 @@ fn bitcoin_reorg_flap() {
     next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
 
     // first block will hold our VRF registration
-    next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
-
-    // second block will be the first mined Stacks block
     next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
 
     let mut sort_height = channel.get_sortitions_processed();
@@ -11245,26 +11238,9 @@ fn bitcoin_reorg_flap() {
         sort_height = channel.get_sortitions_processed();
         eprintln!("Sort height: {}", sort_height);
     }
+    // let's query the miner's account nonce:
 
-    // // let's query the miner's account nonce:
-    // let res = get_account(&http_origin, &miner_account);
-    // assert_eq!(res.balance, 0);
-    // assert_eq!(res.nonce, 1);
-
-
-    // stop bitcoind and copy its DB to simulate a chain flap
-    info!("\n\nStopping bitcoin 1\n\n");
-    btcd_controller.stop_bitcoind().unwrap();
-    // thread::sleep(Duration::from_secs(5));
-    thread::sleep(Duration::from_secs(50));
-
-    // info!("\n\ncopying chainstate: bitcoin 1\n\n");
-    // let btcd_dir = conf.get_burnchain_path_str();
-    // let mut new_conf = conf.clone();
-    // new_conf.node.working_dir = format!("{}.new", &conf.node.working_dir);
-    // fs::create_dir_all(&new_conf.node.working_dir).unwrap();
-
-    // copy_dir_all(&btcd_dir, &new_conf.get_burnchain_path_str()).unwrap();
+    eprintln!("Miner account: {}", miner_account);
 
     eprintln!("End of test");
     channel.stop_chains_coordinator();
