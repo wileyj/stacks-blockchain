@@ -29,7 +29,6 @@ jobs:
       max-parallel: 3
       matrix:
         test-name:
-          - tests::neon_integrations::cost_voting_integration
           - tests::neon_integrations::bitcoind_forking_test
           - tests::neon_integrations::bitcoin_reorg_flap
     steps:

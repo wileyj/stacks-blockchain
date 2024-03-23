@@ -11258,13 +11258,13 @@ fn bitcoin_reorg_flap() {
     // thread::sleep(Duration::from_secs(5));
     thread::sleep(Duration::from_secs(50));
 
-    info!("\n\ncopying chainstate: bitcoin 1\n\n");
-    let btcd_dir = conf.get_burnchain_path_str();
-    let mut new_conf = conf.clone();
-    new_conf.node.working_dir = format!("{}.new", &conf.node.working_dir);
-    fs::create_dir_all(&new_conf.node.working_dir).unwrap();
+    // info!("\n\ncopying chainstate: bitcoin 1\n\n");
+    // let btcd_dir = conf.get_burnchain_path_str();
+    // let mut new_conf = conf.clone();
+    // new_conf.node.working_dir = format!("{}.new", &conf.node.working_dir);
+    // fs::create_dir_all(&new_conf.node.working_dir).unwrap();
 
-    copy_dir_all(&btcd_dir, &new_conf.get_burnchain_path_str()).unwrap();
+    // copy_dir_all(&btcd_dir, &new_conf.get_burnchain_path_str()).unwrap();
 
     eprintln!("End of test");
     channel.stop_chains_coordinator();
