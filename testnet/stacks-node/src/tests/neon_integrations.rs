@@ -11200,21 +11200,21 @@ fn bitcoin_reorg_flap() {
     if env::var("BITCOIND_TEST") != Ok("1".into()) {
         return;
     }
-    let (conf, miner_account) = neon_integration_test_conf();
+
+    let (conf, _miner_account) = neon_integration_test_conf();
+
     let mut btcd_controller = BitcoinCoreController::new(conf.clone());
     btcd_controller
         .start_bitcoind()
-        .map_err(|_e| ())
         .expect("Failed starting bitcoind");
 
     let mut btc_regtest_controller = BitcoinRegtestController::new(conf.clone(), None);
-    let http_origin = format!("http://{}", &conf.node.rpc_bind);
 
     btc_regtest_controller.bootstrap_chain(201);
 
     eprintln!("Chain bootstrapped...");
 
-    let mut run_loop = neon::RunLoop::new(conf);
+    let mut run_loop = neon::RunLoop::new(conf.clone());
     let blocks_processed = run_loop.get_blocks_processed_arc();
 
     let channel = run_loop.get_coordinator_channel().unwrap();
@@ -11238,233 +11238,13 @@ fn bitcoin_reorg_flap() {
         sort_height = channel.get_sortitions_processed();
         eprintln!("Sort height: {}", sort_height);
     }
-    // let's query the miner's account nonce:
-
-    eprintln!("Miner account: {}", miner_account);
-    let account = get_account(&http_origin, &miner_account);
-
-    // N.B. rewards mature after 2 confirmations...
-    assert_eq!(account.balance, 4 * (1_000_000_000 + 20_400_000));
-    assert_eq!(account.nonce, 7);
-
-    // okay, let's figure out the burn block we want to fork away.
-    let burn_header_hash_to_fork = btc_regtest_controller.get_block_hash(206);
-    btc_regtest_controller.invalidate_block(&burn_header_hash_to_fork);
-    btc_regtest_controller.build_next_block(5);
-
-    thread::sleep(Duration::from_secs(50));
-    eprintln!("Wait for block off of shallow fork");
-    next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
-
-    let account = get_account(&http_origin, &miner_account);
-
-    // N.B. rewards mature after 2 confirmations...
-    assert_eq!(account.balance, 0);
-    assert_eq!(account.nonce, 2);
-
-    next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
-
-    let account = get_account(&http_origin, &miner_account);
-
-    // N.B. rewards mature after 2 confirmations...
-    assert_eq!(account.balance, 0);
-    // but we're able to keep on mining
-    assert_eq!(account.nonce, 3);
-
-    // Let's create another fork, deeper
-    let burn_header_hash_to_fork = btc_regtest_controller.get_block_hash(206);
-    eprintln!("Instigate 10-block deep fork");
-    btc_regtest_controller.invalidate_block(&burn_header_hash_to_fork);
-    btc_regtest_controller.build_next_block(10);
-
-    thread::sleep(Duration::from_secs(50));
-    eprintln!("Wait for block off of deep fork");
-    next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
-
-    let account = get_account(&http_origin, &miner_account);
-    assert_eq!(account.balance, 0);
-    assert_eq!(account.nonce, 3);
-
-    next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
-
-    let account = get_account(&http_origin, &miner_account);
-
-    // but we're able to keep on mining
-    assert!(account.nonce >= 3);
-
-    //btcd_controller.stop_bitcoind().unwrap();
-    btcd_controller
-        .stop_bitcoind()
-        .map_err(|_e| ())
-        .expect("Failed stoppping bitcoind");
-    info!("\n\nthread sleep for 120s\n\n");
-    thread::sleep(Duration::from_secs(120));
-
-    eprintln!("End of test");
-    channel.stop_chains_coordinator();
 
     // stop bitcoind and copy its DB to simulate a chain flap
-    info!("\n\nStopping bitcoin 1\n\n");
-
-    //
-    // copied from bitcoind_forking_test
-    //
-    // let mut btcd_controller = BitcoinCoreController::new(conf.clone());
-    // btcd_controller
-    //     .start_bitcoind()
-    //     .map_err(|_e| ())
-    //     .expect("Failed starting bitcoind");
-
-    // let mut btc_regtest_controller = BitcoinRegtestController::new(conf.clone(), None);
-    // let http_origin = format!("http://{}", &conf.node.rpc_bind);
-
-    // btc_regtest_controller.bootstrap_chain(201);
-
-    // eprintln!("Chain bootstrapped...");
-
-    // let mut run_loop = neon::RunLoop::new(conf);
-    // let blocks_processed = run_loop.get_blocks_processed_arc();
-
-    // let channel = run_loop.get_coordinator_channel().unwrap();
-
-    // thread::spawn(move || run_loop.start(None, 0));
-
-    // // give the run loop some time to start up!
-    // wait_for_runloop(&blocks_processed);
-
-    // // first block wakes up the run loop
-    // next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
-
-    // // first block will hold our VRF registration
-    // next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
-
-    // let mut sort_height = channel.get_sortitions_processed();
-    // eprintln!("Sort height: {}", sort_height);
-
-    // while sort_height < 210 {
-    //     next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
-    //     sort_height = channel.get_sortitions_processed();
-    //     eprintln!("Sort height: {}", sort_height);
-    // }
-    // // let's query the miner's account nonce:
-
-    // eprintln!("Miner account: {}", miner_account);
-
-    // let account = get_account(&http_origin, &miner_account);
-
-    // // N.B. rewards mature after 2 confirmations...
-    // assert_eq!(account.balance, 4 * (1_000_000_000 + 20_400_000));
-    // assert_eq!(account.nonce, 7);
-
-    // // okay, let's figure out the burn block we want to fork away.
-    // let burn_header_hash_to_fork = btc_regtest_controller.get_block_hash(206);
-    // btc_regtest_controller.invalidate_block(&burn_header_hash_to_fork);
-    // btc_regtest_controller.build_next_block(5);
-
-    // thread::sleep(Duration::from_secs(50));
-    // eprintln!("Wait for block off of shallow fork");
-    // next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
-
-    // let account = get_account(&http_origin, &miner_account);
-
-    // // N.B. rewards mature after 2 confirmations...
-    // assert_eq!(account.balance, 0);
-    // assert_eq!(account.nonce, 2);
-
-    // next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
-
-    // let account = get_account(&http_origin, &miner_account);
-
-    // // N.B. rewards mature after 2 confirmations...
-    // assert_eq!(account.balance, 0);
-    // // but we're able to keep on mining
-    // assert_eq!(account.nonce, 3);
-
-    // // Let's create another fork, deeper
-    // let burn_header_hash_to_fork = btc_regtest_controller.get_block_hash(206);
-    // eprintln!("Instigate 10-block deep fork");
-    // btc_regtest_controller.invalidate_block(&burn_header_hash_to_fork);
-    // btc_regtest_controller.build_next_block(10);
-
-    // thread::sleep(Duration::from_secs(50));
-    // eprintln!("Wait for block off of deep fork");
-    // next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
-
-    // let account = get_account(&http_origin, &miner_account);
-    // assert_eq!(account.balance, 0);
-    // assert_eq!(account.nonce, 3);
-
-    // next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
-
-    // let account = get_account(&http_origin, &miner_account);
-
-    // // but we're able to keep on mining
-    // assert!(account.nonce >= 3);
-
-    // eprintln!("End of test");
-    // channel.stop_chains_coordinator();
-    //
-    // end copied test
-    //
-    
-    //
-    // old test
-    //
-    // if env::var("BITCOIND_TEST") != Ok("1".into()) {
-    //     return;
-    // }
-
-    // let (conf, _miner_account) = neon_integration_test_conf();
-    // // https://github.com/stacks-network/stacks-core/blob/next/testnet/stacks-node/src/tests/neon_integrations.rs#L5448C4-L5448C27
-
-    // let mut btcd_controller = BitcoinCoreController::new(conf.clone());
-    // info!("\n\nStarting bitcoin 1\n\n");
-    // btcd_controller
-    //     .start_bitcoind()
-	//     .map_err(|_e| ())
-    //     .expect("Failed starting bitcoind 1");
-
-    // let burnchain_config = Burnchain::regtest(&conf.get_burn_db_path());
-    // let mut btc_regtest_controller = BitcoinRegtestController::with_burnchain(
-    //     conf.clone(),
-    //     None,
-    //     Some(burnchain_config.clone()),
-    //     None,
-    // );
-    // btc_regtest_controller.bootstrap_chain(201);
-    
-    // eprintln!("Chain bootstrapped...");
-
-    // let mut run_loop = neon::RunLoop::new(conf.clone());
-    // let blocks_processed = run_loop.get_blocks_processed_arc();
-    // let channel = run_loop.get_coordinator_channel().unwrap();
-
-    // thread::spawn(move || run_loop.start(Some(burnchain_config), 0));
-
-    /* start comment
-
-    // give the run loop some time to start up!
-    wait_for_runloop(&blocks_processed);
-
-    // first block wakes up the run loop
-    next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
-
-    // first block will hold our VRF registration
-    next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
-
-    let mut sort_height = channel.get_sortitions_processed();
-    eprintln!("Sort height: {}", sort_height);
-
-    while sort_height < 210 {
-        next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
-        sort_height = channel.get_sortitions_processed();
-        eprintln!("Sort height: {}", sort_height);
-    }
-
-    // stop bitcoind and copy its DB to simulate a chain flap
-    info!("\n\nStopping bitcoin 1\n\n");
     btcd_controller.stop_bitcoind().unwrap();
     thread::sleep(Duration::from_secs(5));
+
+    // kill bitcoind to make sure it's really stopped // https://github.com/stacks-network/stacks-core/pull/4601
+    btcd_controller.kill_bitcoind(); // https://github.com/stacks-network/stacks-core/pull/4601
 
     let btcd_dir = conf.get_burnchain_path_str();
     let mut new_conf = conf.clone();
@@ -11475,15 +11255,12 @@ fn bitcoin_reorg_flap() {
 
     // resume
     let mut btcd_controller = BitcoinCoreController::new(conf.clone());
-    info!("\n\nStarting bitcoin 2\n\n");
     btcd_controller
         .start_bitcoind()
-	    .map_err(|_e| ())
-        .expect("Failed starting bitcoind 2");
+        .expect("Failed starting bitcoind");
 
     let btc_regtest_controller = BitcoinRegtestController::new(conf.clone(), None);
-    // thread::sleep(Duration::from_secs(5));
-    thread::sleep(Duration::from_secs(50));
+    thread::sleep(Duration::from_secs(5));
 
     info!("\n\nBegin fork A\n\n");
 
@@ -11492,46 +11269,49 @@ fn bitcoin_reorg_flap() {
         btc_regtest_controller.build_next_block(1);
         thread::sleep(Duration::from_secs(5));
     }
-    info!("\n\nStopping bitcoin 2\n\n");
+
     btcd_controller.stop_bitcoind().unwrap();
+
+    thread::sleep(Duration::from_secs(5)); // https://github.com/stacks-network/stacks-core/pull/4601
+    // kill bitcoind to make sure it's really stopped // https://github.com/stacks-network/stacks-core/pull/4601
+    btcd_controller.kill_bitcoind(); // https://github.com/stacks-network/stacks-core/pull/4601
 
     info!("\n\nBegin reorg flap from A to B\n\n");
 
     // carry out the flap to fork B -- new_conf's state was the same as before the reorg
     let mut btcd_controller = BitcoinCoreController::new(new_conf.clone());
     let btc_regtest_controller = BitcoinRegtestController::new(new_conf.clone(), None);
-    info!("\n\nStarting bitcoin 3\n\n");
+
     btcd_controller
         .start_bitcoind()
-	    .map_err(|_e| ())
-        .expect("Failed starting bitcoind 3");
+        .expect("Failed starting bitcoind");
 
     for _i in 0..5 {
         btc_regtest_controller.build_next_block(1);
         thread::sleep(Duration::from_secs(5));
     }
 
-    info!("\n\nStopping bitcoin 3\n\n");
     btcd_controller.stop_bitcoind().unwrap();
+
+    thread::sleep(Duration::from_secs(5)); // https://github.com/stacks-network/stacks-core/pull/4601
+    // kill bitcoind to make sure it's really stopped // https://github.com/stacks-network/stacks-core/pull/4601
+    btcd_controller.kill_bitcoind(); // https://github.com/stacks-network/stacks-core/pull/4601
 
     info!("\n\nBegin reorg flap from B to A\n\n");
 
     let mut btcd_controller = BitcoinCoreController::new(conf.clone());
     let btc_regtest_controller = BitcoinRegtestController::new(conf.clone(), None);
-    info!("\n\nStarting bitcoin 4\n\n");
     btcd_controller
         .start_bitcoind()
-        .map_err(|_e| ())
-        .expect("Failed starting bitcoind 4");
+        .expect("Failed starting bitcoind");
 
     // carry out the flap back to fork A
     for _i in 0..7 {
         btc_regtest_controller.build_next_block(1);
         thread::sleep(Duration::from_secs(5));
     }
+
     assert_eq!(channel.get_sortitions_processed(), 225);
-    end comment*/
-    // info!("\n\nStopping bitcoin 4\n\n");
-    // btcd_controller.stop_bitcoind().unwrap();
-    // channel.stop_chains_coordinator();
+    btcd_controller.stop_bitcoind().unwrap();
+    channel.stop_chains_coordinator();
 }
