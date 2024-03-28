@@ -11271,10 +11271,12 @@ fn bitcoin_reorg_flap() {
     }
 
     btcd_controller.stop_bitcoind().unwrap();
-
-    thread::sleep(Duration::from_secs(5)); // https://github.com/stacks-network/stacks-core/pull/4601
+    info!("\n\nstopping bitcoin 1\n\n");
+    thread::sleep(Duration::from_secs(10)); // https://github.com/stacks-network/stacks-core/pull/4601
     // kill bitcoind to make sure it's really stopped // https://github.com/stacks-network/stacks-core/pull/4601
     btcd_controller.kill_bitcoind(); // https://github.com/stacks-network/stacks-core/pull/4601
+    info!("\n\nkilling bitcoin 1\n\n");
+    thread::sleep(Duration::from_secs(5)); // https://github.com/stacks-network/stacks-core/pull/4601
 
     info!("\n\nBegin reorg flap from A to B\n\n");
 
@@ -11292,10 +11294,12 @@ fn bitcoin_reorg_flap() {
     }
 
     btcd_controller.stop_bitcoind().unwrap();
-
-    thread::sleep(Duration::from_secs(5)); // https://github.com/stacks-network/stacks-core/pull/4601
+    info!("\n\nstopping bitcoin 2\n\n");
+    thread::sleep(Duration::from_secs(10)); // https://github.com/stacks-network/stacks-core/pull/4601
     // kill bitcoind to make sure it's really stopped // https://github.com/stacks-network/stacks-core/pull/4601
     btcd_controller.kill_bitcoind(); // https://github.com/stacks-network/stacks-core/pull/4601
+    info!("\n\nkilling bitcoin 2\n\n");
+    thread::sleep(Duration::from_secs(5)); // https://github.com/stacks-network/stacks-core/pull/4601
 
     info!("\n\nBegin reorg flap from B to A\n\n");
 
