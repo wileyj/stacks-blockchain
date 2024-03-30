@@ -11243,9 +11243,12 @@ fn bitcoin_reorg_flap() {
     eprintln!("Miner account: {}", miner_account);
 
     // // stop bitcoind and copy its DB to simulate a chain flap
-    // info!("\n\nStopping bitcoin 1\n\n");
-    // btcd_controller.stop_bitcoind().unwrap();
-    // thread::sleep(Duration::from_secs(10)); // https://github.com/stacks-network/stacks-core/pull/4601
+    info!("\n\nSleeping 10\n\n");
+    thread::sleep(Duration::from_secs(10));
+    info!("\n\nStopping bitcoin 1\n\n");
+    btcd_controller.stop_bitcoind().unwrap();
+    thread::sleep(Duration::from_secs(10)); // https://github.com/stacks-network/stacks-core/pull/4601
+    info!("\n\nSleeping 10\n\n");
     // // kill bitcoind to make sure it's really stopped // https://github.com/stacks-network/stacks-core/pull/4601
     // btcd_controller.kill_bitcoind(); // https://github.com/stacks-network/stacks-core/pull/4601
     // info!("\n\nkilling bitcoin\n\n");
