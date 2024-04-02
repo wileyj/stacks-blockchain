@@ -59,8 +59,9 @@ jobs:
     steps:
       - name: Build Binary (${{ matrix.arch }}_${{ matrix.cpu }})
         id: build_binary
-        uses: wileyj/actions/stacks-core/create-source-binary@main
+        # uses: wileyj/actions/stacks-core/create-source-binary@main
         # uses: stacks-network/actions/stacks-core/create-source-binary@main
+        uses: stacks-network/actions/stacks-core/create-source-binary@fix/update-binary-builds
         with:
           arch: ${{ matrix.arch }}
           cpu: ${{ matrix.cpu }}
