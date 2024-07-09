@@ -37,7 +37,7 @@ jobs:
             has not been any recent activity after it was closed.
             Please open a new issue for related bugs.
           issue-lock-reason: "resolved"
-          pr-inactive-days: "365"
+          pr-inactive-days: "7"
           # exclude-pr-created-before: ""
           # exclude-pr-created-after: ""
           # exclude-pr-created-between: ""
