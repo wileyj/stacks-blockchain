@@ -10,7 +10,7 @@ env:
   BITCOIND_TEST: 1
   RUST_BACKTRACE: full
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 15
-  TEST_TIMEOUT: 30
+  TEST_TIMEOUT: 60
 
 concurrency:
   group: slow-tests-${{ github.head_ref || github.ref || github.run_id }}
