@@ -2,7 +2,7 @@
 
 name: "Lock Threads"
 
-# on:
+on:
 #   schedule:
 #     - cron: "0 0 * * *"
   workflow_dispatch:
@@ -15,7 +15,7 @@ permissions:
 concurrency:
   group: lock-threads
 
-  jobs:
+jobs:
   ## Lock closed issues/prs/discussions
   cargo:
     name: Cargo
