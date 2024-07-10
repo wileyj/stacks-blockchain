@@ -3,8 +3,8 @@
 name: "Lock Threads"
 
 on:
-#   schedule:
-#     - cron: "0 0 * * *"
+  schedule:
+    - cron: "0 0 * * *"
   workflow_dispatch:
 
 permissions:
@@ -18,7 +18,7 @@ concurrency:
 jobs:
   ## Lock closed issues/prs/discussions
   cargo:
-    name: Cargo
+    name: Lock Threads
     runs-on: ubuntu-latest
     steps:
       ## Perform a lookup to check if the cache already exists
@@ -28,57 +28,3 @@ jobs:
         with:
           github-token: ${{ secrets.GH_TOKEN }}
           process-only: "issues,prs"
-      # - uses: dessant/lock-threads@1bf7ec25051fe7c00bdd17e6a7cf3d7bfb7dc771 # v5.0.1
-      #   with:
-      #     github-token: ${{ secrets.GH_TOKEN }}
-      #     issue-inactive-days: "7"
-      #     # exclude-issue-created-before: ""
-      #     # exclude-issue-created-after: ""
-      #     # exclude-issue-created-between: ""
-      #     # exclude-issue-closed-before: ""
-      #     # exclude-issue-closed-after: ""
-      #     # exclude-issue-closed-between: ""
-      #     # include-any-issue-labels: ""
-      #     # include-all-issue-labels: ""
-      #     # exclude-any-issue-labels: ""
-      #     add-issue-labels: "locked"
-      #     # remove-issue-labels: ""
-      #     issue-comment: >
-      #       This issue has been automatically locked since there
-      #       has not been any recent activity after it was closed.
-      #       Please open a new issue for related bugs.
-      #     issue-lock-reason: "resolved"
-      #     pr-inactive-days: "7"
-      #     # exclude-pr-created-before: ""
-      #     # exclude-pr-created-after: ""
-      #     # exclude-pr-created-between: ""
-      #     # exclude-pr-closed-before: ""
-      #     # exclude-pr-closed-after: ""
-      #     # exclude-pr-closed-between: ""
-      #     # include-any-pr-labels: ""
-      #     # include-all-pr-labels: ""
-      #     # exclude-any-pr-labels: ""
-      #     add-pr-labels: "locked"
-      #     # remove-pr-labels: ""
-      #     pr-comment: >
-      #       This pull request has been automatically locked since there
-      #       has not been any recent activity after it was closed.
-      #       Please open a new issue for related bugs.
-      #     pr-lock-reason: "resolved"
-      #     discussion-inactive-days: "7"
-      #     # exclude-discussion-created-before: ""
-      #     # exclude-discussion-created-after: ""
-      #     # exclude-discussion-created-between: ""
-      #     # exclude-discussion-closed-before: ""
-      #     # exclude-discussion-closed-after: ""
-      #     # exclude-discussion-closed-between: ""
-      #     # include-any-discussion-labels: ""
-      #     # include-all-discussion-labels: ""
-      #     # exclude-any-discussion-labels: ""
-      #     add-discussion-labels: "locked"
-      #     # remove-discussion-labels: ""
-      #     discussion-comment: >
-      #       This discussion has been automatically locked since there
-      #       has not been any recent activity after it was closed.
-      #     process-only: ""
-      #     log-output: true
