@@ -1,5 +1,3 @@
-# https://github.com/dessant/lock-threads
-
 name: "Lock Threads"
 
 on:
@@ -17,14 +15,16 @@ concurrency:
 
 jobs:
   ## Lock closed issues/prs/discussions
-  cargo:
+  lock:
     name: Lock Threads
     runs-on: ubuntu-latest
     steps:
       ## Perform a lookup to check if the cache already exists
       - name: Lock Threads
         id: lock_threads
-        uses: stacks-network/actions/lock-threads@feat/lock-threads
+        uses: stacks-network/actions/lock-threads@main
         with:
           github-token: ${{ secrets.GH_TOKEN }}
-          process-only: "issues,prs"
+          issue-inactive-days: 7
+          pr-inactive-days: 7
+          discussion-inactive-days: 7
