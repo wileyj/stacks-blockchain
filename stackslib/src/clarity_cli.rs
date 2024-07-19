@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+// comment
+
 use std::ffi::OsStr;
 use std::io::{Read, Write};
 use std::path::PathBuf;
